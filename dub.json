@@ -1,0 +1,10 @@
+{
+	"name": "inid",
+    "targetType": "library",
+	"description": "A library for parsing config files",
+	"copyright": "Copyright © 2016, Stefan Brus",
+	"authors": ["Stefan Brus"],
+    "license": "BSL-1.0",
+	"dependencies": {
+	}
+}
