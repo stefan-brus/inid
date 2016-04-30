@@ -7,6 +7,29 @@
 module inid.parser;
 
 /**
+ * Helper function to parse a config.ini file
+ *
+ * Template_params:
+ *      Config = The type of the config struct
+ *
+ * Params:
+ *      path = The path to the config.ini file
+ *
+ * Returns:
+ *      The config parser
+ *
+ * Throws:
+ *      ConfigException on parse error
+ */
+
+ConfigParser!Config parseConfigFile ( Config ) ( string path )
+{
+    import std.file;
+
+    return ConfigParser!Config(readText(path));
+}
+
+/**
  * Exception thrown during config parser errors
  */
 
