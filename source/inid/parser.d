@@ -77,6 +77,9 @@ struct ConfigParser ( Config )
         import std.string;
         import std.traits;
 
+        // Reset the config struct
+        this.config = Config.init;
+
         // Field name tuple of the config struct
         alias CategoryNames = FieldNameTuple!Config;
 
