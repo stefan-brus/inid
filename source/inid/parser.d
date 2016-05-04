@@ -1,7 +1,29 @@
 /**
  * Copyright 2016 Stefan Brus
  *
- * TODO: doc
+ * inid config parser module
+ *
+ * Usage example:
+ *
+ * enum CONFIG_STR = `[Category]
+ * num_val = 42
+ * str_val = foo`;
+ *
+ * struct Config
+ * {
+ *     struct Category
+ *     {
+ *         uint num_val;
+ *         string str_val;
+ *     }
+ *
+ *     Category category;
+ * }
+ *
+ * auto config = ConfigParser!Config(CONFIG_STR);
+ *
+ * assert(config.category.num_val == 42);
+ * assert(config.category.str_val == "foo");
  */
 
 module inid.parser;
