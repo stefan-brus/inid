@@ -4,4 +4,4 @@
 
 module inid;
 
-import inid.parser;
+public import inid.parser;
