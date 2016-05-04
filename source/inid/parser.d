@@ -137,7 +137,6 @@ struct ConfigParser ( Config )
         foreach ( idx, ref field; this.config.tupleof )
         {
             static assert(is(typeof(field) == struct), "ConfigParser fields must be structs");
-            static assert(typeof(field).stringof.toLower() == CategoryNames[idx], "ConfigParser field and capitalized type names must be the same");
 
             // Enforce that we have not reached the end while there are still categories to parse
             enforce!ConfigException(cat_idx < stripped_lines.length, format("Expected category %s", CategoryNames[idx].toUpper()));
@@ -152,6 +151,9 @@ struct ConfigParser ( Config )
             // Strip the whitespace from inside the brackets
             assert(cat_line.length > 1);
             auto cat_name = cat_line[1 .. $ - 1].strip();
+
+            // Enforce that the category name is the same as the struct type name
+            enforce!ConfigException(cat_name.toLower() == typeof(field).stringof.toLower(), format("Expected category %s", typeof(field).stringof));
 
             // Find the index of the next category
             size_t next_cat_idx;
@@ -365,4 +367,34 @@ unittest
     assert(parser.route.url == "/index.html");
     assert(parser.route.path == "public/index.html");
     assert(parser.route.response_code == 200);
+}
+
+unittest
+{
+    struct Config
+    {
+        struct MixedValues
+        {
+            uint integer;
+            double decimal;
+            bool flag;
+            string text;
+        }
+
+        MixedValues mixed_values;
+    }
+
+    enum CONFIG_STR = `
+[MixedValues]
+integer = 42
+decimal = 66.6
+flag = true
+text = This is some text
+`;
+
+    auto parser = ConfigParser!Config(CONFIG_STR);
+    assert(parser.mixed_values.integer == 42);
+    assert(parser.mixed_values.decimal == 66.6);
+    assert(parser.mixed_values.flag == true);
+    assert(parser.mixed_values.text == "This is some text");
 }
