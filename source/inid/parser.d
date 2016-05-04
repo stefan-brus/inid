@@ -288,6 +288,10 @@ struct ConfigParser ( Config )
     }
 }
 
+/**
+ * Simple test case with one category
+ */
+
 unittest
 {
     struct Config
@@ -312,6 +316,10 @@ unittest
     assert(parser.entry.key == 1234567891011);
     assert(parser.entry.value == "the value");
 }
+
+/**
+ * Test case for multiple categories
+ */
 
 unittest
 {
@@ -369,6 +377,10 @@ unittest
     assert(parser.route.response_code == 200);
 }
 
+/**
+ * Test case for different value types
+ */
+
 unittest
 {
     struct Config
@@ -397,4 +409,168 @@ text = This is some text
     assert(parser.mixed_values.decimal == 66.6);
     assert(parser.mixed_values.flag == true);
     assert(parser.mixed_values.text == "This is some text");
+}
+
+/**
+ * Error test cases
+ */
+
+unittest
+{
+    import std.exception;
+
+    /**
+     * Too few categories
+     */
+
+    struct Config
+    {
+        struct CatOne
+        {
+            uint x;
+        }
+
+        CatOne one;
+
+        struct CatTwo
+        {
+            uint y;
+            uint z;
+        }
+
+        CatTwo two;
+    }
+
+    enum CONFIG_STR_TOO_FEW_CATS = `
+[CatOne]
+x = 1
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_TOO_FEW_CATS));
+
+    /**
+     * Expected category
+     */
+
+    enum CONFIG_STR_CAT_EXPECTED = `
+x = 1
+[CatOne]
+x = 1
+
+[CatTwo]
+y = 2
+z = 3
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_CAT_EXPECTED));
+
+    /**
+     * Wrong category name
+     */
+
+    enum CONFIG_STR_WRONG_CAT = `
+[CatOne]
+x = 1
+[CatTwoooo]
+y = 2
+z = 3
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_WRONG_CAT));
+
+    /**
+     * Empty category
+     */
+
+    enum CONFIG_STR_EMPTY_CAT = `
+[CatOne]
+[CatTwo]
+y = 2
+z = 3
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_EMPTY_CAT));
+
+    /**
+     * Too many fields
+     */
+
+    enum CONFIG_STR_TOO_MANY_FIELDS = `
+[CatOne]
+x = 1
+y = 2
+[CatTwo]
+y = 2
+z = 3
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_TOO_MANY_FIELDS));
+
+    /**
+     * Too few fields
+     */
+
+    enum CONFIG_STR_TOO_FEW_FIELDS = `
+[CatOne]
+x = 1
+[CatTwo]
+y = 2
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_TOO_FEW_FIELDS));
+
+    /**
+     * Missing =
+     */
+
+    enum CONFIG_STR_MISSING_EQUALS = `
+[CatOne]
+x = 1
+[CatTwo]
+y 2
+z = 3
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_MISSING_EQUALS));
+
+    /**
+     * Missing assignment
+     */
+
+    enum CONFIG_STR_MISSING_ASSIGN = `
+[CatOne]
+x
+[CatTwo]
+y = 2
+z = 3
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_MISSING_ASSIGN));
+
+    /**
+     * Wrong field
+     */
+
+    enum CONFIG_STR_WRONG_FIELD = `
+[CatOne]
+x = 1
+[CatTwo]
+b = 2
+c = 3
+`;
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_WRONG_FIELD));
+
+    /**
+     * Wrong type
+     */
+
+    enum CONFIG_STR_WRONG_TYPE = `
+[CatOne]
+x = 1
+[CatTwo]
+y = hello
+z = 3
+`;
+
+    assertThrown!ConfigException(ConfigParser!Config(CONFIG_STR_WRONG_TYPE));
 }
