@@ -46,8 +46,8 @@ module inid.parser;
 
 ConfigParser!Config parseConfigFile ( Config ) ( string path )
 {
-    import std.file;
-
+	import std.file;
+	assert(exists(path), "filename:" ~ path ~" is not exist");
     return ConfigParser!Config(readText(path));
 }
 
