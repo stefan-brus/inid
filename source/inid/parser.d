@@ -66,7 +66,7 @@ class ConfigException : Exception
      *      line = The line
      */
 
-    this ( string msg, string file = __FILE__, uint line = __LINE__ )
+    this ( string msg, string file = __FILE__, size_t line = __LINE__ )
     {
         super(msg, file, line);
     }
