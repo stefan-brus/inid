@@ -91,6 +91,8 @@ struct ConfigParser ( Config )
 
     alias config this;
 
+	
+
     /**
      * Constructor
      *
@@ -102,6 +104,21 @@ struct ConfigParser ( Config )
     {
         this.parse(str);
     }
+	/**
+	* Parse a config from file
+	*
+	* Params:
+	*      str = The config file path
+	*
+	* Throws:
+	*      ConfigException on parse error
+	*/
+	void parseFile(string filename)
+	{
+		import std.file;
+		assert(exists(filename), "filename:" ~ filename ~" is not exist");
+		parse(readText(filename));
+	}
 
     /**
      * Parse a config string
@@ -410,7 +427,31 @@ text = This is some text
     assert(parser.mixed_values.flag == true);
     assert(parser.mixed_values.text == "This is some text");
 }
+/**
+* Test case for file config
+*/
+unittest
+{
+	struct Config
+    {
+        struct MixedValues
+        {
+            uint integer;
+            double decimal;
+            bool flag;
+            string text;
+        }
 
+        MixedValues mixed_values;
+    }
+
+	auto parser = ConfigParser!Config();
+	parser.parseFile("./config/app.ini");
+    assert(parser.mixed_values.integer == 42);
+    assert(parser.mixed_values.decimal == 66.6);
+    assert(parser.mixed_values.flag == true);
+    assert(parser.mixed_values.text == "This is some text");
+}
 /**
  * Error test cases
  */
