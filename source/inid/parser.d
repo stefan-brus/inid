@@ -276,16 +276,18 @@ struct ConfigParser ( Config )
             auto val = kv[1].strip();
 
             // Enforce that the entry has both a key and a value
-            enforce!ConfigException(key.length > 0 && val.length > 0, format("[%s] Fields must be \"key = value\" pairs", category));
+            //enforce!ConfigException(key.length > 0 && val.length > 0, format("[%s] Fields must be \"key = value\" pairs", category));
+			enforce!ConfigException(key.length > 0 , format("[%s] Fields must be \"key = value\" pairs", category));
 
             field_map[key.toLower()] = val;
         }
-
         // Build the result struct based on the associative array
         T result;
+
         foreach ( i, ref field; result.tupleof )
         {
             auto field_name = FieldNames[i].toLower();
+
 
             // Enforce that the field is configured
             enforce!ConfigException(field_name in field_map, format("[%s] Expected field: %s", category, field_name));
