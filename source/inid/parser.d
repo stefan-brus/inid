@@ -44,10 +44,11 @@ module inid.parser;
  *      ConfigException on parse error
  */
 
-ConfigParser!Config parseConfigFile ( Config ) ( string path )
+ConfigParser!Config parseConfigFile(Config)(string path)
 {
-	import std.file;
-	assert(exists(path), "filename:" ~ path ~" is not exist");
+    import std.exception;
+
+    enforce!ConfigException(exists(path), "filename:" ~ path ~ " is not exist");
     return ConfigParser!Config(readText(path));
 }
 
@@ -66,7 +67,7 @@ class ConfigException : Exception
      *      line = The line
      */
 
-    this ( string msg, string file = __FILE__, size_t line = __LINE__ )
+    this(string msg, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line);
     }
@@ -79,7 +80,7 @@ class ConfigException : Exception
  *      Config = The type of the struct to try to parse
  */
 
-struct ConfigParser ( Config )
+struct ConfigParser(Config)
 {
     static assert(is(Config == struct), "ConfigParser type argument must be a struct");
 
@@ -91,8 +92,6 @@ struct ConfigParser ( Config )
 
     alias config this;
 
-	
-
     /**
      * Constructor
      *
@@ -100,11 +99,11 @@ struct ConfigParser ( Config )
      *      str = The config string
      */
 
-    this ( string str )
+    this(string str)
     {
         this.parse(str);
     }
-	/**
+    /**
 	* Parse a config from file
 	*
 	* Params:
@@ -113,12 +112,13 @@ struct ConfigParser ( Config )
 	* Throws:
 	*      ConfigException on parse error
 	*/
-	void parseFile(string filename)
-	{
-		import std.file;
-		assert(exists(filename), "filename:" ~ filename ~" is not exist");
-		parse(readText(filename));
-	}
+    void parseFile(string filename)
+    {
+        import std.file, std.exception;
+
+        enforce!ConfigException(exists(filename), "filename:" ~ filename ~ " is not exist");
+        parse(readText(filename));
+    }
 
     /**
      * Parse a config string
@@ -130,7 +130,7 @@ struct ConfigParser ( Config )
      *      ConfigException on parse error
      */
 
-    void parse ( string str )
+    void parse(string str)
     {
         import std.algorithm;
         import std.array;
@@ -146,39 +146,43 @@ struct ConfigParser ( Config )
         alias CategoryNames = FieldNameTuple!Config;
 
         // Split the string into lines, strip whitespace, remove empty strings, remove comments
-        auto stripped_lines = str.split('\n').map!(strip).array().remove!(a => a.length == 0).remove!(a => a[0] == ';');
+        auto stripped_lines = str.split('\n').map!(strip).array().remove!(a => a.length == 0).remove!(
+            a => a[0] == ';');
 
         // The current [CATEGORY] index
         size_t cat_idx;
 
-        foreach ( idx, ref field; this.config.tupleof )
+        foreach (idx, ref field; this.config.tupleof)
         {
             static assert(is(typeof(field) == struct), "ConfigParser fields must be structs");
 
             // Enforce that we have not reached the end while there are still categories to parse
-            enforce!ConfigException(cat_idx < stripped_lines.length, format("Expected category %s", CategoryNames[idx].toUpper()));
+            enforce!ConfigException(cat_idx < stripped_lines.length,
+                format("Expected category %s", CategoryNames[idx].toUpper()));
 
             // Attempt to parse a [CATEGORY] name
             auto cat_line = stripped_lines[cat_idx];
 
             // Enforce that the current line is a category
             assert(cat_line.length > 0);
-            enforce!ConfigException(cat_line[0] == '[' && cat_line[$ - 1] == ']', format("Expected a category, got: %s", cat_line));
+            enforce!ConfigException(cat_line[0] == '[' && cat_line[$ - 1] == ']',
+                format("Expected a category, got: %s", cat_line));
 
             // Strip the whitespace from inside the brackets
             assert(cat_line.length > 1);
             auto cat_name = cat_line[1 .. $ - 1].strip();
 
             // Enforce that the category name is the same as the struct type name
-            enforce!ConfigException(cat_name.toLower() == typeof(field).stringof.toLower(), format("Expected category %s", typeof(field).stringof));
+            enforce!ConfigException(cat_name.toLower() == typeof(field).stringof.toLower(),
+                format("Expected category %s", typeof(field).stringof));
 
             // Find the index of the next category
             size_t next_cat_idx;
-            for ( auto i = cat_idx + 1; i < stripped_lines.length; i++ )
+            for (auto i = cat_idx + 1; i < stripped_lines.length; i++)
             {
                 assert(stripped_lines[i].length > 0);
 
-                if ( stripped_lines[i][0] == '[' )
+                if (stripped_lines[i][0] == '[')
                 {
                     next_cat_idx = i;
                     break;
@@ -186,13 +190,14 @@ struct ConfigParser ( Config )
             }
 
             // If no category was found, set the next index to the end of the config string
-            if ( next_cat_idx == 0 )
+            if (next_cat_idx == 0)
             {
                 next_cat_idx = stripped_lines.length;
             }
 
             // Enforce that there is at least one line between this category and the next
-            enforce!ConfigException(next_cat_idx > cat_idx + 1, format("Category %s is empty", cat_name.toUpper()));
+            enforce!ConfigException(next_cat_idx > cat_idx + 1,
+                format("Category %s is empty", cat_name.toUpper()));
 
             // Parse the category into a struct
             field = this.parseStruct!(typeof(field))(stripped_lines[cat_idx + 1 .. next_cat_idx]);
@@ -219,7 +224,7 @@ struct ConfigParser ( Config )
      *      ConfigException on parse error
      */
 
-    static Config parseResult ( string str )
+    static Config parseResult(string str)
     {
         auto parser = ConfigParser(str);
         return parser;
@@ -243,7 +248,7 @@ struct ConfigParser ( Config )
      *      ConfigException on parse error
      */
 
-    private T parseStruct ( T ) ( string[] lines )
+    private T parseStruct(T)(string[] lines)
     {
         import std.array;
         import std.conv;
@@ -259,47 +264,51 @@ struct ConfigParser ( Config )
         auto category = T.stringof.toUpper();
 
         // Enforce that the category has the expected number of lines
-        enforce!ConfigException(T.tupleof.length == lines.length, format("[%s] Expected %d fields", category, T.tupleof.length));
+        enforce!ConfigException(T.tupleof.length == lines.length,
+            format("[%s] Expected %d fields", category, T.tupleof.length));
 
         // Build an associative array of the config key value pairs
         string[string] field_map;
 
         // Parse the lines as key value pairs of the "key = value" format
-        foreach ( line; lines )
+        foreach (line; lines)
         {
             auto kv = line.split('=');
 
             // Enforce that the line contains one '='
-            enforce!ConfigException(kv.length == 2, format("[%s] Fields must be \"key = value\" pairs", category));
+            enforce!ConfigException(kv.length == 2,
+                format("[%s] Fields must be \"key = value\" pairs", category));
 
             auto key = kv[0].strip();
             auto val = kv[1].strip();
 
             // Enforce that the entry has both a key and a value
             //enforce!ConfigException(key.length > 0 && val.length > 0, format("[%s] Fields must be \"key = value\" pairs", category));
-			enforce!ConfigException(key.length > 0 , format("[%s] Fields must be \"key = value\" pairs", category));
+            enforce!ConfigException(key.length > 0,
+                format("[%s] Fields must be \"key = value\" pairs", category));
 
             field_map[key.toLower()] = val;
         }
         // Build the result struct based on the associative array
         T result;
 
-        foreach ( i, ref field; result.tupleof )
+        foreach (i, ref field; result.tupleof)
         {
             auto field_name = FieldNames[i].toLower();
 
-
             // Enforce that the field is configured
-            enforce!ConfigException(field_name in field_map, format("[%s] Expected field: %s", category, field_name));
+            enforce!ConfigException(field_name in field_map,
+                format("[%s] Expected field: %s", category, field_name));
 
             // Attempt to convert the value to the appropriate type
             try
             {
                 field = to!(typeof(field))(field_map[field_name]);
             }
-            catch ( Exception e )
+            catch (Exception e)
             {
-                throw new ConfigException(format("[%s] Field %s must be of type %s", category, field_name, typeof(field).stringof));
+                throw new ConfigException(format("[%s] Field %s must be of type %s",
+                    category, field_name, typeof(field).stringof));
             }
         }
 
@@ -434,7 +443,7 @@ text = This is some text
 */
 unittest
 {
-	struct Config
+    struct Config
     {
         struct MixedValues
         {
@@ -447,8 +456,8 @@ unittest
         MixedValues mixed_values;
     }
 
-	auto parser = ConfigParser!Config();
-	parser.parseFile("./config/app.ini");
+    auto parser = ConfigParser!Config();
+    parser.parseFile("./config/app.ini");
     assert(parser.mixed_values.integer == 42);
     assert(parser.mixed_values.decimal == 66.6);
     assert(parser.mixed_values.flag == true);
